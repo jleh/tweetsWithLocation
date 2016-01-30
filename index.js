@@ -17,15 +17,23 @@ app.use(function(req, res, next) {
 });
 
 app.get('/', function (req, res) {
-    getTweet(function (data) { res.send(data); });
+    getTweet(data => res.send(data));
 });
  
-var params = {screen_name: 'nodejs'};
+var params = {q: 'Helsinki', result_type: 'recent', count: 100};
 
 function getTweet(callback) {
-    client.get('statuses/show/568715979498393600.json', params, function(error, tweets, response){
+     client.get('search/tweets.json', params, function(error, tweets, response){
         if (!error) {
-            callback(tweets);
+            var tweetsWithGeo = [];
+
+            tweets.statuses.forEach(tweet => {
+                if (tweet.geo) {
+                    tweetsWithGeo.push(tweet);
+                }
+            });
+
+            callback(tweetsWithGeo);
         } else {
             callback('error');
         }
