@@ -1,42 +1,87 @@
 var Twitter = require('twitter');
 var express = require('express');
+var redis = require('redis');
+var _ = require('lodash');
 
 var app = express();
+var redisClient = redis.createClient(process.env.REDIS_URL);
 
 var client = new Twitter({
-  consumer_key: 'c4bOhkKzepAdPROftmezTksJY',
-  consumer_secret: 'Pags3nzuu31U7ivjxiZfEpHtBNLT9tzsLWteAh4TVzAPP2Z0Mt',
-  access_token_key: '',
-  access_token_secret: ''
+    consumer_key: process.env.TWITTER_CONSUMER_KEY,
+    consumer_secret: process.env.TWITTER_CONSUMER_SECRET,
+    access_token_key: '',
+    access_token_secret: ''
 });
 
+var cacheTime = process.env.QUERY_CACHE_TIME || 60; // Minimum time between Twitter api requests in seconds.
+var queryStr = process.env.TWITTER_SEARCH_STRING || 'Helsinki'; // Query parameter for Twitter api call.
+
 app.use(function(req, res, next) {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  next();
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    next();
 });
 
 app.get('/', function (req, res) {
-    getTweet(data => res.send(data));
+    var requestTimestamp = parseInt(new Date().getTime() / 1000);
+
+    redisClient.get('api_call_timestamp', (err, lastTimestamp) => {
+        if (lastTimestamp && (requestTimestamp - lastTimestamp) < cacheTime) {
+            console.log('Served from cache');
+            getRedisTweets(tweets => res.send(tweets));
+        } else {
+            console.log('API call');
+            getTweets(data => res.send(data));
+        }
+    });
+});
+
+app.get('/saved', function (req, res) {
+    getRedisTweets(data => res.send(data));
 });
  
-var params = {q: 'Helsinki', result_type: 'recent', count: 100};
+var params = {
+    q: queryStr,
+    result_type: 'recent',
+    count: 100
+};
 
-function getTweet(callback) {
-     client.get('search/tweets.json', params, function(error, tweets, response){
+function getTweets(callback) {
+    client.get('search/tweets.json', params, function(error, tweets, response){
         if (!error) {
             var tweetsWithGeo = [];
+            var responseTimestamp = parseInt(new Date().getTime() / 1000);
+
+            redisClient.set('api_call_timestamp', responseTimestamp);
 
             tweets.statuses.forEach(tweet => {
                 if (tweet.geo) {
                     tweetsWithGeo.push(tweet);
+                    redisClient.hset('tweets', tweet.id, JSON.stringify(tweet));
                 }
             });
 
-            callback(tweetsWithGeo);
+            getRedisTweets(savedTweets => {
+                var combinedTweets = _.unionBy(savedTweets, tweetsWithGeo, 'id');
+
+                callback(combinedTweets);
+            });
         } else {
+            console.log(error);
             callback('error');
         }
+    });
+}
+
+function getRedisTweets(callback) {
+    var tweetObjects = [];
+
+    redisClient.hgetall('tweets', function (err, obj) {
+        for (var key in obj) {
+            tweetObjects.push(JSON.parse(obj[key]));
+        }
+
+        callback(tweetObjects);
     });
 }
 
