@@ -21,3 +21,8 @@ App is configured with enviroment variables:
 npm install
 npm start
 ```
+Open `http://localhost:3000/`
+
+There is also `http://localhost:3000/saved` endpoint which returns tweets from cache without calling the api.
+
+For now it's not possible to clear cache with this app. Tweets are stored in `tweets` hash.

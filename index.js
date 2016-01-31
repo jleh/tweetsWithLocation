@@ -22,6 +22,7 @@ app.use(function(req, res, next) {
     next();
 });
 
+// Get tweets
 app.get('/', function (req, res) {
     var requestTimestamp = parseInt(new Date().getTime() / 1000);
 
@@ -36,6 +37,7 @@ app.get('/', function (req, res) {
     });
 });
 
+// Show only tweets that are saved in Redis.
 app.get('/saved', function (req, res) {
     getRedisTweets(data => res.send(data));
 });
@@ -46,6 +48,9 @@ var params = {
     count: 100
 };
 
+/**
+ * Get tweets from API and Redis.
+ */
 function getTweets(callback) {
     client.get('search/tweets.json', params, function(error, tweets, response){
         if (!error) {
@@ -73,6 +78,9 @@ function getTweets(callback) {
     });
 }
 
+/**
+ * Gets tweets stored in Redis.
+ */
 function getRedisTweets(callback) {
     var tweetObjects = [];
 
