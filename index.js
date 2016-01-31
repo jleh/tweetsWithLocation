@@ -15,10 +15,11 @@ var client = new Twitter({
 
 var cacheTime = process.env.QUERY_CACHE_TIME || 60; // Minimum time between Twitter api requests in seconds.
 var queryStr = process.env.TWITTER_SEARCH_STRING || 'Helsinki'; // Query parameter for Twitter api call.
+var allowedOrigin = process.env.ALLOW_ORIGIN || '*'; // Access-Control-Allow-Origin header value.
 
 app.use(function(req, res, next) {
-    res.header("Access-Control-Allow-Origin", "*");
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    res.header('Access-Control-Allow-Origin', allowedOrigin);
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
     next();
 });
 

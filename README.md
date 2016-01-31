@@ -12,6 +12,7 @@ App is configured with enviroment variables:
 | --- | --- | --- |
 | REDIS_URL | Redis DB URL | - |
 | QUERY_CACHE_TIME | Minimum time between Twitter API calls in seconds | 60 |
+| ALLOW_ORIGIN | Access-Control-Allow-Origin header value | '*' |
 | TWITTER_SEARCH_STRING | Twitter search query parameter ([Read more](https://dev.twitter.com/rest/public/search)) | 'Helsinki' |
 | TWITTER_CONSUMER_KEY | App consumer key | - |
 | TWITTER_CONSUMER_SECRET | App secret key | - |
